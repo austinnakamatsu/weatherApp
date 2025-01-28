@@ -3,7 +3,12 @@ Basic Weather App that fetches live data based on location
 
 ## Running the application
 
-The code you're provided with here was created using Vite.  Before the first time you run this app, make sure to run `npm install` to install needed dependencies.  Then, to run the app, you can run:
+The code you're provided with here was created using Vite. 
+If it's your first time running the app run:
+```
+npm install
+```
+To run the app:
 ```
 npm run dev
 ```
