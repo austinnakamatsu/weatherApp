@@ -1,5 +1,5 @@
-# Weather Application that fetches live data from OpenWeather API
-Basic Weather App that fetches live data based on location
+# Weather Application that fetches live data from OpenWeather API and OpenStreetMap
+Weather App that fetches live data based on location where you can either search, use an interactive map, or use your current location!
 
 ## Running the application
 

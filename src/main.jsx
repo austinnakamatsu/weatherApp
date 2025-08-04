@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import FetchSearch from './pages/Search'
 
-// import './index.css'
+import './index.css'
 
 const queryClient = new QueryClient()
 
