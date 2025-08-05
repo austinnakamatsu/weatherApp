@@ -37,7 +37,7 @@ function LocationMarker({ onLocationChange }) {
 }
 
 // Main map component
-export default function WeatherMap({ onSelectLocation }) {
+export default function WeatherMap({ onSelectLocation , onClose}) {
   return (
         <div
     style={{
@@ -49,6 +49,29 @@ export default function WeatherMap({ onSelectLocation }) {
         border: '1px solid #ddd',
     }}
     >
+    {onClose && (
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            zIndex: 1000,
+            background: '#fff',
+            border: '1px solid #ccc',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            fontSize: '1.2rem',
+            lineHeight: '0',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+          }}
+          aria-label="Close Map"
+        >
+          ×
+        </button>
+              )}
     <MapContainer
         center={[37.7749, -122.4194]}
         zoom={5}

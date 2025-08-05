@@ -31,7 +31,6 @@ export default function Search() {
     const [inputFocused, setInputFocused] = useState(false)
     const [selectedTimezone, setSelectedTimezone] = useState('HST'); // default to HST
 
-
     const styles = css`
         margin: 0;
         display: flex;
@@ -65,6 +64,7 @@ export default function Search() {
         flex-direction: row;  /* Cards in a row */
         gap: 0.5rem;
         padding: 0.5rem 0;
+        width: fit-content;
     `
     const TIMEZONES = {
         HST: -10,
@@ -79,6 +79,87 @@ export default function Search() {
         JST: 9,
         AEST: 10,
     };
+
+    const searchRowStyles = css`
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+        width: 100%;
+    `
+
+    const inputStyles = css`
+        padding: 0.6rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        width: 100%;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        transition: border 0.2s;
+        box-sizing: border-box;
+        
+        &:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+    `
+
+    const buttonStyles = css`
+        padding: 0.5rem 1rem;
+        font-size: 0.95rem;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        
+
+        &:hover {
+            background-color: #0056b3;
+        }
+    `
+
+    const suggestionListStyles = css`
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0 0;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 100%;
+        z-index: 1000;
+        position: absolute;
+        box-sizing: border-box;
+        top: 100%;
+
+        li {
+            padding: 0.6rem 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+
+            &:last-child {
+            border-bottom: none;
+            }
+
+            &:hover {
+            background-color: #f0f8ff;
+            }
+        }
+    `
+    const timezoneStyle = css`
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1rem 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+            Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        font-size: 0.9rem;
+        color: #333;
+    `
 
 
     async function fetchSuggestions(query) {
@@ -144,19 +225,23 @@ export default function Search() {
         if (suggestion.recent) {
             setInputQuery(suggestion.name)
             fetchSuggestions(suggestion.name)
-        } else {
-            setLatitude(parseFloat(suggestion.lat))
-            setLongitude(parseFloat(suggestion.lon))
-            setUseCurrentLocation(true)
-            reverseGeocode(suggestion.lat, suggestion.lon)
-            setInputQuery("")
-            setSuggestions([])
+            setSearchParams({q: suggestion.name })
+            return
+        } 
+        setLatitude(parseFloat(suggestion.lat))
+        setLongitude(parseFloat(suggestion.lon))
+        setUseCurrentLocation(false)
+        reverseGeocode(suggestion.lat, suggestion.lon)
+        setInputQuery(suggestion.name)
+        setSuggestions([])
 
-            // Save to recent
-            const updated = [suggestion.name, ...recentSearches.filter(c => c !== suggestion.name)].slice(0, 5)
-            setRecentSearches(updated)
-            localStorage.setItem("recentSearches", JSON.stringify(updated))
-        }
+        // trigger search
+        setSearchParams({q: suggestion.name })
+
+        // Save to recent
+        const updated = [suggestion.name, ...recentSearches.filter(c => c !== suggestion.name)].slice(0, 5)
+        setRecentSearches(updated)
+        localStorage.setItem("recentSearches", JSON.stringify(updated))
     }
 
 
@@ -290,65 +375,52 @@ export default function Search() {
                 localStorage.setItem("recentSearches", JSON.stringify(updated))
 
                 setSuggestions([])
-            }}>
-                <div style={{ position: 'relative', width: '300px' }}>
+            }}
+            css={searchRowStyles}
+            >
+                <div style={{ position: 'relative', flexGrow:1, minWidth: 0, flexShrink: 1 }}>
                     <input
                         value={inputQuery}
                         onChange={handleInputChange}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
                         placeholder="Search for a city (City, State)"
-                        style={{ width: '100%', padding: '0.5rem' }}
+                        css={inputStyles}
                     />
-                </div>
+               
                 {inputFocused && suggestions.length > 0 && (
-                    <ul style={{
-                        listStyle: 'none',
-                        padding: 0,
-                        margin: 0,
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        background: '#fff',
-                        position: 'absolute',
-                        zIndex: 1000,
-                        width: '300px'
-                    }}>
+                    <ul css={suggestionListStyles}>
                         {suggestions.map((s, i) => (
                         <li
                             key={i}
                             onClick={() => handleSuggestionClick(s)}
-                            style={{
-                            padding: '0.5rem',
-                            cursor: 'pointer',
-                            background: s.recent ? '#f9f9f9' : '#fff',
-                            borderBottom: '1px solid #eee'
-                            }}
                         >
                             {s.name} {s.recent && <span style={{ fontSize: '0.8rem', color: '#888' }}> (recent)</span>}
                         </li>
                         ))}
                     </ul>
-                )}
-                <button type="submit">Search</button>
-                <button type="button" onClick={() => {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            setLatitude(position.coords.latitude)
-                            setLongitude(position.coords.longitude)
-                            setUseCurrentLocation(true)
-                            setSearchParams({})
-                        },
-                        (error) => {
-                            console.error("Error getting location:", error);
-                            alert("Unable to access your location. Please allow permission or try again.");
-                        }
-                    );
-                }}>
-                    Use My Location
-                </button>
-                <button type="button" onClick={() => setShowMap(true)}>
-                📍 Pick location on map
-                </button>
+                )} 
+                </div>
+                    <button type="button" css={buttonStyles} onClick={() => {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                setLatitude(position.coords.latitude)
+                                setLongitude(position.coords.longitude)
+                                setUseCurrentLocation(true)
+                                setSearchParams({})
+                            },
+                            (error) => {
+                                console.error("Error getting location:", error);
+                                alert("Unable to access your location. Please allow permission or try again.");
+                            }
+                        );
+                    }}>
+                        Use Current Location
+                    </button>
+                    <button type="button" css={buttonStyles} onClick={() => setShowMap(true)}>
+                    Pick location on map
+                    </button>
+                
                 {showMap && (
                     <div style={{ position: 'relative', zIndex: 1000 }}>
                         <div style={{
@@ -393,49 +465,50 @@ export default function Search() {
                                 reverseGeocode(lat, lng);
                                 setShowMap(false); // auto-close on select
                             }}
+                            onClose={() => setShowMap(false)}
                             />
                         </div>
                         </div>
                     </div>
                     )}
+                <div css={timezoneStyle}>
+                    <label htmlFor="timezone">Timezone: </label>
+                    <select
+                        id="timezone"
+                        value={selectedTimezone}
+                        onChange={(e) => setSelectedTimezone(e.target.value)}
+                    >
+                        {Object.entries(TIMEZONES).map(([label, offset]) => (
+                        <option key={label} value={label}>
+                            {label} (UTC{offset >= 0 ? '+' : ''}{offset})
+                        </option>
+                        ))}
+                    </select>
+                </div> 
             </form>
-            <div style={{ marginTop: '1rem' }}>
-                <label htmlFor="timezone">Timezone: </label>
-                <select
-                    id="timezone"
-                    value={selectedTimezone}
-                    onChange={(e) => setSelectedTimezone(e.target.value)}
-                >
-                    {Object.entries(TIMEZONES).map(([label, offset]) => (
-                    <option key={label} value={label}>
-                        {label} (UTC{offset >= 0 ? '+' : ''}{offset})
-                    </option>
-                    ))}
-                </select>
-            </div>
-            <h2>Weather Results for: {" "}
+            <h2 style={{textAlign: 'center', textTransform: 'capitalize'}}>{" "}
                 {useCurrentLocation
                 ? locationLabel || "Loading location..."
                 : query || "No location selected"}
             </h2>
             {currentWeatherQuery.data && (
-            <NowCard
-                data={{
-                ...currentWeatherQuery.data,
-                pop: 0 // no 'pop' in current weather endpoint, so we mock 0%
-                }}
-            />
+                <NowCard
+                    data={{
+                    ...currentWeatherQuery.data,
+                    pop: 0 // no 'pop' in current weather endpoint, so we mock 0%
+                    }}
+                />
             )}
             {forecastQuery.data && (
                 <div css={forecastLayout}>
                     <div css={dailyStyles}>
-                    <h3>Daily Forecast</h3>
+                    <h3 style={{paddingLeft:'0.5rem'}}>5-Day Forecast</h3>
                     {groupedDailyForecast.map(day => (
                         <Card key={day.dt} data={day} isDaily timezoneOffset={TIMEZONES[selectedTimezone]}/>
                     ))}
                     </div>
                     <div css={hourlyStyles}>
-                    <h3>Daily Outlook</h3>
+                    <h3 style={{paddingLeft:'0.5rem'}}>3-Hourly Forecast</h3>
                     <div css={hourlyRow}>
                         {forecastQuery.data.list.slice(0, 12).map(hour => (
                             <Card key={hour.dt} data={hour} timezoneOffset={TIMEZONES[selectedTimezone]}/>
@@ -447,13 +520,6 @@ export default function Search() {
 
             {forecastQuery.error && <ErrorContainer>Error: {forecastQuery.error.message}</ErrorContainer>}
             {forecastQuery.isLoading && <Spinner />}
-            <ul css={styles}>
-                {forecastQuery.data?.list && forecastQuery.data.list.map(repo => (
-                    <li key={repo.dt}>
-                        <Card data={repo} timezoneOffset={TIMEZONES[selectedTimezone]}/>
-                    </li>
-                ))}
-            </ul>
         </div>
     )
 }
